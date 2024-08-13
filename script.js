@@ -1,204 +1,276 @@
-var currentPageUrl = window.location.href;
+// Function to inject our custom script into the webpage
+const injectCustomScript = () => {
+  const script = document.createElement("script");
+  script.src = chrome.runtime.getURL("inject.js");
+  (document.head || document.documentElement).appendChild(script);
+};
 
-var cleanedUrl = currentPageUrl.split('#/')[0];
+// Function to observe dynamic changes in the DOM and apply the provided callback to relevant nodes
+const observeDOMChanges = (selector, callback) => {
+  const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+          mutation.addedNodes.forEach(addedNode => {
+              if (addedNode.nodeType === 1) { // Check if the added node is an element
+                  const matchedElements = addedNode.querySelectorAll?.(selector);
+                  if (matchedElements && matchedElements.length > 0) {
+                      callback(matchedElements);
+                  }
+              }
+          });
+      });
+  });
 
-function showToast(message, duration = 3000) {
-    const toast = document.createElement('div');
-  
-    toast.style.position = 'fixed';
-    toast.style.top = '100px';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
-    toast.style.backgroundColor = '#45a047';
-    toast.style.color = 'white';
-    toast.style.padding = '10px';
-    toast.style.borderRadius = '5px';
-    toast.style.zIndex = '9999';
-    toast.style.textAlign = 'center';
-  
-    toast.textContent = message;
-  
-    document.body.appendChild(toast);
-  
-    setTimeout(() => {
-        document.body.removeChild(toast);
-    }, duration);
-}
-
-var tagSections = document.querySelectorAll('.opblock-tag-section.is-open');
-
-tagSections.forEach(function(tagSection) {
-    var tagHeader = tagSection.querySelector('.opblock-tag');
-
-    var copyButton = document.createElement('button');
-    copyButton.textContent = 'Copy URL';
-    copyButton.classList.add('copy-button');
-    copyButton.style.backgroundColor = '#4CAF50';
-    copyButton.style.border = 'none';
-    copyButton.style.color = 'white';
-    copyButton.style.padding = '5px 10px';
-    copyButton.style.textAlign = 'center';
-    copyButton.style.textDecoration = 'none';
-    copyButton.style.display = 'inline-block';
-    copyButton.style.fontSize = '14px';
-    copyButton.style.margin = '4px 2px';
-    copyButton.style.cursor = 'pointer';
-    copyButton.style.borderRadius = '4px';
-    copyButton.style.transitionDuration = '0.4s';
-
-    copyButton.addEventListener('mouseover', function() {
-        copyButton.style.backgroundColor = '#45a049';
-    });
-
-    copyButton.addEventListener('mouseout', function() {
-        copyButton.style.backgroundColor = '#4CAF50';
-    });
-
-    tagHeader.appendChild(copyButton);
-
-    copyButton.addEventListener('click', function() {
-        var linkElement = tagHeader.querySelector('a');
-        var url = linkElement.getAttribute('href');
-        var newUrl = cleanedUrl + url;
-        navigator.clipboard.writeText(newUrl)
-            .then(function() {
-                console.log('URL copied: ' + newUrl);
-                showToast(newUrl + ' Successfully Copied to Clipboard')
-            })
-            .catch(function(err) {
-                console.error('Copying failed: ', err);
-                showToast(newUrl + ' Copying Process Failed')
-            });
-    });
-});
-
-var opblockElements = document.querySelectorAll('.opblock-put, .opblock-get, .opblock-post, .opblock-delete');
-
-opblockElements.forEach(function(opblockElement) {
-    var controlButton = opblockElement.querySelector('.opblock-summary-control');
-
-    if (!controlButton) {
-        return;
-    }
-
-    var pathDescriptionWrapper = controlButton.querySelector('.opblock-summary-path-description-wrapper');
-
-    if (!pathDescriptionWrapper) {
-        return;
-    }
-
-    var pathSpan = pathDescriptionWrapper.querySelector('.opblock-summary-path');
-
-    if (!pathSpan) {
-        return;
-    }
-
-    var linkElement = pathSpan.querySelector('a');
-
-    if (!linkElement) {
-        return;
-    }
-
-    var url = linkElement.getAttribute('href');
-
-    var newUrl = cleanedUrl + url;
-
-    var copyButton = document.createElement('button');
-    copyButton.textContent = 'Copy URL';
-    copyButton.classList.add('copy-button');
-    copyButton.style.backgroundColor = '#4CAF50';
-    copyButton.style.border = 'none';
-    copyButton.style.color = 'white';
-    copyButton.style.padding = '3px 6px';
-    copyButton.style.textAlign = 'center';
-    copyButton.style.textDecoration = 'none';
-    copyButton.style.display = 'inline-block';
-    copyButton.style.fontSize = '10px';
-    copyButton.style.margin = '2px 1px';
-    copyButton.style.cursor = 'pointer';
-    copyButton.style.borderRadius = '4px';
-    copyButton.style.transitionDuration = '0.4s';
-
-    copyButton.addEventListener('mouseover', function() {
-        copyButton.style.backgroundColor = '#45a049';
-    });
-
-    copyButton.addEventListener('mouseout', function() {
-        copyButton.style.backgroundColor = '#4CAF50';
-    });
-
-    controlButton.appendChild(copyButton);
-
-    copyButton.addEventListener('click', function() {
-        navigator.clipboard.writeText(newUrl)
-            .then(function() {
-                console.log('URL copied: ' + newUrl);
-                showToast(newUrl + ' Successfully Copied to Clipboard')
-            })
-            .catch(function(err) {
-                console.error('Copying failed: ', err);
-                showToast(newUrl + ' Copying Process Failed')
-            });
-    });
-});
-
-
-function onCopyClick(codeBlock) {
-    navigator.clipboard.writeText(codeBlock.innerText).then(() => {
-      this.innerText = "Copied!"
-      setTimeout(() => {
-        this.innerText = "Copy";
-      }, 2000)
-    }).catch(() => {
-      this.innerText = "Failed to Copy!"
-      setTimeout(() => {
-        this.innerText = "Copy";
-      }, 2000)
-    })
-  }
-  
-  
-  const copyButton = () => {
-    const copyButton = document.createElement('button');
-    copyButton.innerText = "Copy";
-  
-    copyButton.setAttribute('class', 'copy-swagger');
-  
-    return copyButton
-  }
-  
-  const addCopyButtonToCodeBlocks = (codeBlocks) => {
-    codeBlocks.forEach(codeBlock => {
-      const newCopyButton = copyButton();
-  
-      newCopyButton.addEventListener("click", onCopyClick.bind(newCopyButton, codeBlock))
-  
-      codeBlock.parentElement.append(newCopyButton);
-    })
-  }
-  
-  const alreadyContainsCopyButton = (codeBlock) => {
-    return !!codeBlock.parentNode.querySelector('.copy-to-clipboard') || !!codeBlock.parentNode.parentNode.querySelector('.copy-to-clipboard');
-  }
-  
-  
-  let observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach(addedNode => {
-        const codeBlocks = addedNode.querySelector && addedNode.querySelectorAll('.microlight');
-        if (codeBlocks && codeBlocks.length) {
-          filteredCodeBlocks = [...codeBlocks].filter(block => !block.parentElement.querySelector('button') && !alreadyContainsCopyButton(block));
-          if (filteredCodeBlocks.length) {
-            addCopyButtonToCodeBlocks(filteredCodeBlocks);
-          }
-        }
-      })
-    })
-  })
-  
+  // Start observing the document body for dynamic content changes
   observer.observe(document.body, {
       childList: true,
-      subtree: true,
-      attributes: false,
-      characterData: false
-  })
+      subtree: true
+  });
+
+  // Initial check for any already present elements
+  const initialElements = document.querySelectorAll(selector);
+  if (initialElements.length > 0) {
+      callback(initialElements);
+  }
+};
+
+// Function to create a reusable "Copy URL" button using Swagger-UI styles
+const createCopyButton = (onClickHandler) => {
+  const copyToClipboard = document.createElement('div');
+  copyToClipboard.className = 'copy-to-clipboard'; // Use existing Swagger-UI styles
+  copyToClipboard.ariaLabel = 'Copy to Clipboard';
+  copyToClipboard.title = 'Copy to Clipboard';
+  copyToClipboard.style.right = '10px';
+  
+  const copyButton = document.createElement('button');  
+  
+  // Attach the provided click handler
+  copyButton.addEventListener('click', onClickHandler);
+  
+  // Add the button to the container
+  copyToClipboard.appendChild(copyButton);
+
+  return copyToClipboard;
+};
+
+// Function to show a toast notification on the screen
+const showToast = (message, duration = 3000) => {
+  const toast = document.createElement('div');
+  toast.style = `
+      position: fixed;
+      top: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #45a047;
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 9999;
+      text-align: center;
+  `;
+  toast.textContent = message;
+
+  // Add the toast to the document body
+  document.body.appendChild(toast);
+
+  // Remove the toast after the specified duration
+  setTimeout(() => document.body.removeChild(toast), duration);
+};
+
+// Function to append "Copy URL" buttons to specified elements
+const appendCopyButtons = (elements, urlBuilder) => {
+  elements.forEach(element => {
+      const linkElement = element.querySelector('a');
+      if (!linkElement) return; // Skip if no link is found
+
+      // Construct the new URL by appending the link href to the cleaned base URL
+      const url = urlBuilder(linkElement.getAttribute('href'));
+
+      // Create the "Copy URL" button using Swagger-UI styles
+      const copyButton = createCopyButton(() => {
+          navigator.clipboard.writeText(url)
+              .then(() => showToast(`${url} Successfully Copied to Clipboard`))
+              .catch(err => showToast(`${url} Copying Process Failed`, err));
+      });
+
+      // Append the button to the element
+      element.appendChild(copyButton);
+  });
+};
+
+// Function to create and append a "Copy Swagger Definition" button to the specified hgroup
+const appendCopyDefinitionButton = () => {
+  const onClickHandler = () => {
+      // Dispatch an event to request the Swagger definition
+      document.dispatchEvent(new CustomEvent("requestSwaggerDefinition"));
+  };
+
+  // Create the "Copy Swagger Definition" button using existing styles
+  const copyDefinitionButton = createCopyButton(onClickHandler);
+  copyDefinitionButton.ariaLabel = 'Copy Swagger Definition';
+  copyDefinitionButton.style.marginLeft = '10px'; // Space between text and button
+  copyDefinitionButton.style.position = 'relative';
+  copyDefinitionButton.style.right = '0px';
+  copyDefinitionButton.style.display = 'inline-flex';
+
+  // Use observeDOMChanges to monitor the DOM for the target element and insert the button
+  observeDOMChanges('hgroup.main h2.title', (headerElements) => {
+      headerElements.forEach(headerElement => {
+          const versionSpan = headerElement.querySelector('span');
+          if (versionSpan) {
+              versionSpan.insertAdjacentElement('beforebegin', copyDefinitionButton);
+          } else {
+              headerElement.appendChild(copyDefinitionButton);
+          }
+      });
+  });
+};
+
+// // Function to observe for the <h2> element and add the button once it's available
+// const observeForHeader = () => {
+//   const observer = new MutationObserver(mutations => {
+//       mutations.forEach(mutation => {
+//           mutation.addedNodes.forEach(addedNode => {
+//               if (addedNode.nodeType === 1) { // Check if the added node is an element
+//                   const hgroup = addedNode.querySelector('hgroup.main h2.title');
+//                   if (hgroup) {
+//                       appendCopyDefinitionButton();
+//                       observer.disconnect(); // Stop observing once the button is added
+//                   }
+//               }
+//           });
+//       });
+//   });
+
+//   // Check if the element already exists
+//   const hgroupExists = document.querySelector('hgroup.main h2.title');
+//   if (hgroupExists) {
+//       appendCopyDefinitionButton();
+//   } else {
+//       // Start observing the document body for changes
+//       observer.observe(document.body, {
+//           childList: true,
+//           subtree: true
+//       });
+//   }
+// };
+
+// Listen for the event that carries the Swagger definition to copy it to the clipboard
+document.addEventListener("swaggerDefinitionRetrieved", (event) => {
+  const swaggerDefinition = event.detail;
+  navigator.clipboard.writeText(swaggerDefinition)
+      .then(() => showToast('Swagger Definition Successfully Copied to Clipboard'))
+      .catch(err => showToast('Copying Swagger Definition Failed', err));
+});
+
+// Function to create and append "Copy Schema" buttons to each model-box inside model-container
+const appendCopySchemaButtons = () => {
+  observeDOMChanges('.model-container', (modelContainers) => {
+      modelContainers.forEach(container => {
+          const schemaName = container.getAttribute('data-name');
+          const modelBoxElement = container.querySelector('.model-box');
+
+          if (modelBoxElement) {
+              const onClickHandler = () => {
+                  // Dispatch an event to request the schema definition
+                  document.dispatchEvent(
+                      new CustomEvent("requestSchemaDefinition", {
+                          detail: schemaName,
+                      })
+                  );
+              };
+
+              // Create the "Copy Schema" button using existing styles
+              const copySchemaButton = createCopyButton(onClickHandler);
+              copySchemaButton.ariaLabel = `Copy ${schemaName} Schema`;
+              copySchemaButton.style.marginLeft = '10px'; // Space between text and button
+
+              // Append the button to the model-box element
+              modelBoxElement.appendChild(copySchemaButton);
+          }
+      });
+  });
+};
+
+// Listen for the schema definition to be retrieved and copied to clipboard
+document.addEventListener("schemaDefinitionRetrieved", (event) => {
+  const { schemaName, schemaDefinition } = event.detail;
+
+  // Copy the JSON schema to the clipboard
+  navigator.clipboard.writeText(`${schemaName}: ${schemaDefinition}`)
+      .then(() => showToast(`${schemaName} Schema Successfully Copied to Clipboard`))
+      .catch(err => showToast(`Copying ${schemaName} Schema Failed`, err));
+});
+
+// Function to create and append the "Copy All Schemas" button
+const appendCopyAllSchemasButton = () => {
+  observeDOMChanges('.models h4', (headerElements) => {
+      headerElements.forEach(headerElement => {
+          // Create the button
+          const copyAllButton = createCopyButton(() => {
+              document.dispatchEvent(new CustomEvent("requestCopyAllSchemas"));
+          });
+          copyAllButton.ariaLabel = 'Copy All Schemas';
+          copyAllButton.style.position = 'relative';
+          copyAllButton.style.marginLeft = '20px'; // Space between text and button
+          copyAllButton.style.bottom = '0px';
+
+          // Insert the button as the last child of the <h4> element
+          headerElement.appendChild(copyAllButton);
+      });
+  });
+};
+
+// Listen for the event to copy all schemas to the clipboard
+document.addEventListener("allSchemasCopied", (event) => {
+  const allSchemasJson = event.detail;
+
+  // Copy all schemas JSON to the clipboard
+  navigator.clipboard.writeText(allSchemasJson)
+      .then(() => showToast('All Schemas Successfully Copied to Clipboard'))
+      .catch(err => showToast('Copying All Schemas Failed', err));
+});
+
+// Function to append "Copy" buttons to code blocks with the class 'microlight'
+const appendCopyButtonsToCodeBlocks = () => {
+  observeDOMChanges('.microlight', (codeBlocks) => {
+      // Filter out code blocks that already contain a copy button
+      const filteredCodeBlocks = [...codeBlocks].filter(block => 
+          !block.parentElement.querySelector('button') &&
+          !block.parentNode.querySelector('.copy-to-clipboard') &&
+          !block.parentNode.parentNode.querySelector('.copy-to-clipboard')
+      );
+
+      // Add a copy button to each filtered code block
+      filteredCodeBlocks.forEach(codeBlock => {
+          const copyButton = createCopyButton(() => {
+              navigator.clipboard.writeText(codeBlock.innerText)
+                  .then(() => showToast(`Successfully Copied to Clipboard`))
+                  .catch(err => showToast(`Copying Process Failed`, err));
+          });
+          copyButton.style.height = '20px';
+          copyButton.style.width = '20px';
+          codeBlock.parentElement.style.position = 'relative';          
+          codeBlock.parentElement.append(copyButton);
+      });
+  });
+};
+
+// Inject the custom script into the webpage
+injectCustomScript();
+
+// Extract the base URL by removing any fragment identifiers
+const cleanedUrl = window.location.href.split('#/')[0];
+
+// Select all open tag sections and add "Copy URL" buttons
+const tagSections = document.querySelectorAll('.opblock-tag-section.is-open');
+appendCopyButtons(tagSections, href => `${cleanedUrl}${href}`);
+
+// Select all operation blocks and add "Copy URL" buttons
+const opblockElements = document.querySelectorAll('.opblock-put, .opblock-get, .opblock-post, .opblock-delete');
+appendCopyButtons(opblockElements, href => `${cleanedUrl}${href}`);
+
+// Append the additional buttons to the page
+appendCopyButtonsToCodeBlocks();
+appendCopyDefinitionButton();
+appendCopySchemaButtons();
+appendCopyAllSchemasButton();
